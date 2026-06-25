@@ -7,12 +7,14 @@ import javafx.scene.layout.*;
 
 public class WaveformPanel extends VBox {
 
+    private Label selectedClip;
+
     public WaveformPanel() {
         setSpacing(10);
 
         Label title = new Label("Audio Processing / Trim Editor");
 
-        Label selectedClip = new Label("Selected Clip: none");
+        selectedClip = new Label("Selected Clip: none");
 
         Pane waveformPane = new Pane();
         waveformPane.setPrefHeight(180);
@@ -38,7 +40,17 @@ public class WaveformPanel extends VBox {
         Button normalize = new Button("Normalize");
         Button reverse = new Button("Reverse");
 
-        HBox trimControls = new HBox(10, trimStart, trimEnd, applyTrim, fadeIn, fadeOut, normalize, reverse);
+        HBox trimControls = new HBox(
+                10,
+                trimStart,
+                trimEnd,
+                applyTrim,
+                fadeIn,
+                fadeOut,
+                normalize,
+                reverse
+        );
+
         trimControls.setPadding(new Insets(5, 0, 0, 0));
 
         getChildren().addAll(
@@ -47,5 +59,14 @@ public class WaveformPanel extends VBox {
                 waveformPane,
                 trimControls
         );
+    }
+
+    public void loadClip(AudioClip clip) {
+        if (clip == null) {
+            selectedClip.setText("Selected Clip: none");
+            return;
+        }
+
+        selectedClip.setText("Selected Clip: " + clip.getFileName());
     }
 }
