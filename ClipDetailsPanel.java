@@ -1,11 +1,18 @@
 // Displays metadata for the currently selected audio clip.
-// Includes clip name, category, duration, tags, notes, and editing controls for managing clip information.
+// Includes clip name, category, duration, tags, notes,
+// and editing controls for managing clip information.
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 
 public class ClipDetailsPanel extends VBox {
+
+    private TextField clipName;
+    private TextField category;
+    private TextField duration;
+    private TextArea tags;
+    private TextArea notes;
 
     public ClipDetailsPanel() {
         setSpacing(10);
@@ -14,20 +21,20 @@ public class ClipDetailsPanel extends VBox {
 
         Label title = new Label("Clip Details");
 
-        TextField clipName = new TextField();
+        clipName = new TextField();
         clipName.setPromptText("Clip Name");
 
-        TextField category = new TextField();
+        category = new TextField();
         category.setPromptText("Category");
 
-        TextField duration = new TextField();
+        duration = new TextField();
         duration.setPromptText("Duration");
 
-        TextArea tags = new TextArea();
+        tags = new TextArea();
         tags.setPromptText("Tags / Metadata");
         tags.setPrefHeight(120);
 
-        TextArea notes = new TextArea();
+        notes = new TextArea();
         notes.setPromptText("Notes");
         notes.setPrefHeight(120);
 
@@ -44,5 +51,41 @@ public class ClipDetailsPanel extends VBox {
                 editTags,
                 updateClip
         );
+    }
+
+    public void displayClip(AudioClip clip) {
+        if (clip == null) {
+            clearFields();
+            return;
+        }
+
+        clipName.setText(clip.getFileName());
+        category.setText(clip.getCategory());
+        duration.setText(String.valueOf(clip.getDuration()));
+        tags.setText(clip.getTags());
+    }
+
+    public void updateClip(AudioClip clip) {
+        if (clip == null) {
+            return;
+        }
+
+        clip.setFileName(clipName.getText());
+        clip.setCategory(category.getText());
+        clip.setTags(tags.getText());
+
+        try {
+            clip.setDuration(Double.parseDouble(duration.getText()));
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid duration entered.");
+        }
+    }
+
+    public void clearFields() {
+        clipName.clear();
+        category.clear();
+        duration.clear();
+        tags.clear();
+        notes.clear();
     }
 }

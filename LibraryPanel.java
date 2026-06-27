@@ -1,5 +1,6 @@
 // Displays audio clip categories and the clip library.
-// Allows users to browse, search, and select audio snippets that can be added to projects or the wordbashing timeline.
+// Allows users to browse, search, and select audio snippets
+// that can be added to projects or the wordbashing timeline.
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -8,6 +9,9 @@ import javafx.scene.layout.VBox;
 
 public class LibraryPanel extends VBox {
 
+    private ListView<String> categories;
+    private ListView<AudioClip> clipLibrary;
+
     public LibraryPanel() {
         setSpacing(10);
         setPadding(new Insets(10));
@@ -15,29 +19,30 @@ public class LibraryPanel extends VBox {
 
         Label categoryLabel = new Label("Categories");
 
-        ListView<String> categories = new ListView<>();
+        categories = new ListView<>();
         categories.getItems().addAll(
                 "All Clips",
                 "Greetings",
                 "Names",
                 "Laughs",
                 "Actions",
+                "Responses",
                 "Misc"
         );
         categories.setPrefHeight(160);
 
         Label libraryLabel = new Label("Clip Library");
 
-        ListView<String> clipLibrary = new ListView<>();
+        clipLibrary = new ListView<>();
         clipLibrary.getItems().addAll(
-                "hello.wav",
-                "yes.wav",
-                "no.wav",
-                "laugh.wav",
-                "greeting.wav",
-                "character_i.wav",
-                "character_love.wav",
-                "character_eggs.wav"
+                new AudioClip("hello.wav", "/audio/hello.wav", "Greetings", "hello", 1.2),
+                new AudioClip("yes.wav", "/audio/yes.wav", "Responses", "yes", 0.8),
+                new AudioClip("no.wav", "/audio/no.wav", "Responses", "no", 0.7),
+                new AudioClip("laugh.wav", "/audio/laugh.wav", "Laughs", "laugh", 1.5),
+                new AudioClip("greeting.wav", "/audio/greeting.wav", "Greetings", "greeting", 2.0),
+                new AudioClip("character_i.wav", "/audio/character_i.wav", "Names", "i", 0.5),
+                new AudioClip("character_love.wav", "/audio/character_love.wav", "Actions", "love", 0.9),
+                new AudioClip("character_eggs.wav", "/audio/character_eggs.wav", "Misc", "eggs", 1.0)
         );
 
         getChildren().addAll(
@@ -46,5 +51,23 @@ public class LibraryPanel extends VBox {
                 libraryLabel,
                 clipLibrary
         );
+    }
+
+    public AudioClip getSelectedClip() {
+        return clipLibrary.getSelectionModel().getSelectedItem();
+    }
+
+    public ListView<AudioClip> getClipLibrary() {
+        return clipLibrary;
+    }
+
+    public ListView<String> getCategories() {
+        return categories;
+    }
+
+    public void addClip(AudioClip clip) {
+        if (clip != null) {
+            clipLibrary.getItems().add(clip);
+        }
     }
 }

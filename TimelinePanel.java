@@ -4,17 +4,20 @@
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import java.util.ArrayList;
 
 public class TimelinePanel extends VBox {
 
     private VBox timelineTracks;
+    private ArrayList<HBox> channels;
 
     public TimelinePanel() {
         setSpacing(10);
 
         Label title = new Label("Wordbashing Timeline");
 
-        HBox timeRuler = new HBox(55,
+        HBox timeRuler = new HBox(
+                55,
                 new Label("0:00"),
                 new Label("0:01"),
                 new Label("0:02"),
@@ -30,34 +33,25 @@ public class TimelinePanel extends VBox {
                 "-fx-background-color: #f8f8f8;"
         );
 
-        timelineTracks.getChildren().addAll(
-                createTrack("Channel 1"),
-                createTrack("Channel 2"),
-                createTrack("Channel 3"),
-                createTrack("Channel 4")
+        channels = new ArrayList<>();
+
+        addChannel();
+        addChannel();
+        addChannel();
+        addChannel();
+
+        Button addChannelButton = new Button("Add Channel");
+        Button clearTimelineButton = new Button("Clear Timeline");
+
+        addChannelButton.setOnAction(e -> addChannel());
+
+        clearTimelineButton.setOnAction(e -> clearTimeline());
+
+        HBox controls = new HBox(
+                10,
+                addChannelButton,
+                clearTimelineButton
         );
-
-        Button addChannel = new Button("Add Channel");
-        Button removeClip = new Button("Remove Clip");
-        Button clearTimeline = new Button("Clear Timeline");
-        Button previewPhrase = new Button("Preview Phrase");
-
-        addChannel.setOnAction(e -> {
-            int nextChannel = timelineTracks.getChildren().size() + 1;
-            timelineTracks.getChildren().add(createTrack("Channel " + nextChannel));
-        });
-
-        clearTimeline.setOnAction(e -> {
-            timelineTracks.getChildren().clear();
-            timelineTracks.getChildren().addAll(
-                    createTrack("Channel 1"),
-                    createTrack("Channel 2"),
-                    createTrack("Channel 3"),
-                    createTrack("Channel 4")
-            );
-        });
-
-        HBox controls = new HBox(10, addChannel, removeClip, clearTimeline, previewPhrase);
 
         getChildren().addAll(
                 title,
@@ -79,11 +73,49 @@ public class TimelinePanel extends VBox {
         Label label = new Label(trackName);
         label.setMinWidth(100);
 
-        Label sampleClip = new Label("[ empty track ]");
-        sampleClip.setStyle("-fx-text-fill: gray;");
-
-        track.getChildren().addAll(label, sampleClip);
+        track.getChildren().add(label);
 
         return track;
+    }
+
+    public void addChannel() {
+        int channelNumber = channels.size() + 1;
+
+        HBox newChannel = createTrack(
+                "Channel " + channelNumber
+        );
+
+        channels.add(newChannel);
+        timelineTracks.getChildren().add(newChannel);
+    }
+
+    public void addClipToTimeline(AudioClip clip, int channelNumber) {
+        if (clip == null) {
+            return;
+        }
+
+        if (channelNumber < 1 || channelNumber > channels.size()) {
+            channelNumber = 1;
+        }
+
+        Button clipButton = new Button(clip.getFileName());
+
+        channels.get(channelNumber - 1)
+                .getChildren()
+                .add(clipButton);
+    }
+
+    public void clearTimeline() {
+        timelineTracks.getChildren().clear();
+        channels.clear();
+
+        addChannel();
+        addChannel();
+        addChannel();
+        addChannel();
+    }
+
+    public int getChannelCount() {
+        return channels.size();
     }
 }
