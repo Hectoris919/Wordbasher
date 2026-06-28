@@ -5,12 +5,18 @@
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.VBox;
+import java.util.ArrayList;
+
 
 public class LibraryPanel extends VBox {
 
     private ListView<String> categories;
     private ListView<AudioClip> clipLibrary;
+    private ArrayList<AudioClip> allClips;
 
     public LibraryPanel() {
         setSpacing(10);
@@ -33,6 +39,7 @@ public class LibraryPanel extends VBox {
 
         Label libraryLabel = new Label("Clip Library");
 
+        allClips = new ArrayList<>();
         clipLibrary = new ListView<>();
         clipLibrary.getItems().addAll(
                 new AudioClip("hello.wav", "/audio/hello.wav", "Greetings", "hello", 1.2),
@@ -44,6 +51,21 @@ public class LibraryPanel extends VBox {
                 new AudioClip("character_love.wav", "/audio/character_love.wav", "Actions", "love", 0.9),
                 new AudioClip("character_eggs.wav", "/audio/character_eggs.wav", "Misc", "eggs", 1.0)
         );
+        allClips.addAll(clipLibrary.getItems());
+
+        clipLibrary.setOnDragDetected(event -> {
+            AudioClip selectedClip = getSelectedClip();
+
+            if (selectedClip != null) {
+                Dragboard dragboard = clipLibrary.startDragAndDrop(TransferMode.COPY);
+
+                ClipboardContent content = new ClipboardContent();
+                content.putString(selectedClip.getFileName());
+
+                dragboard.setContent(content);
+                event.consume();
+            }
+        });
 
         getChildren().addAll(
                 categoryLabel,
@@ -66,8 +88,18 @@ public class LibraryPanel extends VBox {
     }
 
     public void addClip(AudioClip clip) {
-        if (clip != null) {
-            clipLibrary.getItems().add(clip);
+        if (clip == null) {
+            return;
         }
+        clipLibrary.getItems().add(clip);
+        allClips.add(clip);
+    }
+
+    public ArrayList<AudioClip> getAllClips() {
+        return allClips;
+    }
+
+    public void refreshLibrary(ArrayList<AudioClip> clips) {
+        clipLibrary.getItems().setAll(clips);
     }
 }
