@@ -4,10 +4,13 @@
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Rectangle;
+import java.util.Random;
 
 public class WaveformPanel extends VBox {
 
     private Label selectedClip;
+    private Pane waveformPane;
 
     public WaveformPanel() {
         setSpacing(10);
@@ -16,17 +19,14 @@ public class WaveformPanel extends VBox {
 
         selectedClip = new Label("Selected Clip: none");
 
-        Pane waveformPane = new Pane();
+        waveformPane = new Pane();
         waveformPane.setPrefHeight(180);
         waveformPane.setStyle(
                 "-fx-border-color: black;" +
                 "-fx-background-color: #eeeeee;"
         );
 
-        Label placeholder = new Label("Waveform Display Placeholder");
-        placeholder.setLayoutX(20);
-        placeholder.setLayoutY(75);
-        waveformPane.getChildren().add(placeholder);
+        drawEmptyWaveform();
 
         TextField trimStart = new TextField();
         trimStart.setPromptText("Trim Start");
@@ -64,9 +64,45 @@ public class WaveformPanel extends VBox {
     public void loadClip(AudioClip clip) {
         if (clip == null) {
             selectedClip.setText("Selected Clip: none");
+            drawEmptyWaveform();
             return;
         }
 
         selectedClip.setText("Selected Clip: " + clip.getFileName());
+        drawWaveform(clip);
+    }
+
+    private void drawEmptyWaveform() {
+        waveformPane.getChildren().clear();
+
+        Label placeholder = new Label("No clip selected");
+        placeholder.setLayoutX(20);
+        placeholder.setLayoutY(75);
+
+        waveformPane.getChildren().add(placeholder);
+    }
+
+    private void drawWaveform(AudioClip clip) {
+        waveformPane.getChildren().clear();
+
+        Random random = new Random(clip.getFileName().hashCode());
+
+        double paneHeight = 180;
+        double centerY = paneHeight / 2;
+        double barWidth = 4;
+        double spacing = 3;
+
+        for (int i = 0; i < 120; i++) {
+            double height = 20 + random.nextDouble() * 120;
+
+            Rectangle bar = new Rectangle(
+                    20 + i * (barWidth + spacing),
+                    centerY - height / 2,
+                    barWidth,
+                    height
+            );
+
+            waveformPane.getChildren().add(bar);
+        }
     }
 }
