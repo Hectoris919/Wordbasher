@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
+import java.util.ArrayList;
 
 public class Main extends Application {
 
@@ -56,6 +57,25 @@ public class Main extends Application {
         TimelinePanel timelinePanel = new TimelinePanel();
         ClipDetailsPanel clipDetailsPanel = new ClipDetailsPanel();
         PlaybackController playbackController = new PlaybackController();
+
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+
+    ArrayList<AudioClip> filteredClips = new ArrayList<>();
+
+    for (AudioClip clip : libraryPanel.getAllClips()) {
+
+        String search = newValue.toLowerCase();
+
+        if (clip.getFileName().toLowerCase().contains(search)
+                || clip.getCategory().toLowerCase().contains(search)
+                || clip.getTags().toLowerCase().contains(search)) {
+
+            filteredClips.add(clip);
+        }
+    }
+
+    libraryPanel.refreshLibrary(filteredClips);
+});
 
         libraryPanel.getClipLibrary()
                 .getSelectionModel()
@@ -103,10 +123,19 @@ public class Main extends Application {
             File selectedFile = fileChooser.showSaveDialog(stage);
 
             if (selectedFile != null) {
+                currentProject = new ProjectFile("Voice LAB Project");
+                for (AudioClip clip : libraryPanel.getAllClips()) {
+                    currentProject.addClip(clip);
+                }
+                for (TimelineClip timelineClip : timelinePanel.getTimelineClips()) {
+                    currentProject.addTimelineClip(timelineClip);
+                }
                 currentProject.saveToFile(selectedFile.getAbsolutePath());
                 System.out.println("Project saved: " + selectedFile.getAbsolutePath());
+               
             }
         });
+
 
         loadButton.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -126,6 +155,22 @@ public class Main extends Application {
 
                     libraryPanel.getClipLibrary().getItems().clear();
                     libraryPanel.getClipLibrary().getItems().addAll(currentProject.getClips());
+                    timelinePanel.clearTimeline();
+                    for (TimelineClip timelineClip : currentProject.getTimelineClips()) {
+                        AudioClip matchingClip = null;
+                        for (AudioClip clip : currentProject.getClips()) {
+                            if (clip.getFileName().equals(timelineClip.getFileName())) {
+                                matchingClip = clip;
+                                break;
+                            }
+                        }
+                        if (matchingClip != null) {
+                            while (timelinePanel.getChannelCount() < timelineClip.getChannelNumber()) {
+                                timelinePanel.addChannel();
+                            }
+                            timelinePanel.addClipToTimeline(matchingClip, timelineClip.getChannelNumber());
+                        }
+                    }
 
                     System.out.println("Project loaded: " + selectedFile.getAbsolutePath());
                 } else {
@@ -143,6 +188,8 @@ public class Main extends Application {
         Button loopButton = new Button("Loop");
         Button addToTimelineButton = new Button("Add To Timeline");
         Button addChannelButton = new Button("Add Channel");
+        Button removeChannelButton = new Button("Remove Channel");
+        Button clearTimelineButton = new Button("Clear Timeline");
 
         ComboBox<Integer> channelSelector = new ComboBox<>();
         updateChannelSelector(channelSelector, timelinePanel);
@@ -168,7 +215,17 @@ public class Main extends Application {
             updateChannelSelector(channelSelector, timelinePanel);
         });
 
-        HBox playbackControls = new HBox(10, playButton, pauseButton, stopButton, loopButton, addToTimelineButton, channelSelector, new Label("Channel:"), addChannelButton);
+        removeChannelButton.setOnAction(e -> {
+            timelinePanel.removeLastChannel();
+            updateChannelSelector(channelSelector, timelinePanel);
+        });
+
+        clearTimelineButton.setOnAction(e -> {
+            timelinePanel.clearTimeline();
+            updateChannelSelector(channelSelector, timelinePanel);
+        });
+
+        HBox playbackControls = new HBox(10, playButton, pauseButton, stopButton, loopButton, addToTimelineButton, channelSelector, new Label("Channel:"), addChannelButton, removeChannelButton, clearTimelineButton);
         playbackControls.setPadding(new Insets(10));
 
         BorderPane root = new BorderPane();
