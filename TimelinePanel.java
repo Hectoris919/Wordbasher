@@ -1,8 +1,11 @@
 // Represents the wordbashing timeline.
-// Allows audio clips to be arranged into multiple channels to build phrases, sentences, and custom audio sequences.
+// Allows audio clips to be arranged into multiple channels
+// to build phrases, sentences, and custom audio sequences.
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
 import java.util.ArrayList;
 
@@ -40,23 +43,18 @@ public class TimelinePanel extends VBox {
         addChannel();
         addChannel();
 
-        Button addChannelButton = new Button("Add Channel");
-        Button clearTimelineButton = new Button("Clear Timeline");
+        HBox controls = new HBox(10);
 
-        addChannelButton.setOnAction(e -> addChannel());
-
-        clearTimelineButton.setOnAction(e -> clearTimeline());
-
-        HBox controls = new HBox(
-                10,
-                addChannelButton,
-                clearTimelineButton
-        );
+        ScrollPane timelineScrollPane = new ScrollPane(timelineTracks);
+        timelineScrollPane.setFitToWidth(true);
+        timelineScrollPane.setPrefHeight(260);
+        timelineScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        timelineScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
         getChildren().addAll(
                 title,
                 timeRuler,
-                timelineTracks,
+                timelineScrollPane,
                 controls
         );
     }
@@ -75,19 +73,52 @@ public class TimelinePanel extends VBox {
 
         track.getChildren().add(label);
 
+        track.setOnDragOver(event -> {
+            if (event.getDragboard().hasString()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        track.setOnDragDropped(event -> {
+            Dragboard dragboard = event.getDragboard();
+            boolean success = false;
+
+            if (dragboard.hasString()) {
+                Button clipButton = new Button(dragboard.getString());
+
+                clipButton.setOnAction(e -> {
+                    HBox parentTrack = (HBox) clipButton.getParent();
+                    parentTrack.getChildren().remove(clipButton);
+                });
+
+                track.getChildren().add(clipButton);
+                success = true;
+            }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
+
         return track;
     }
 
     public void addChannel() {
         int channelNumber = channels.size() + 1;
 
-        HBox newChannel = createTrack(
-                "Channel " + channelNumber
-        );
+        HBox newChannel = createTrack("Channel " + channelNumber);
 
         channels.add(newChannel);
         timelineTracks.getChildren().add(newChannel);
     }
+
+    public void removeLastChannel() {
+        if (channels.size() <= 1) {
+            return;
+        }
+            HBox lastChannel = channels.remove(channels.size() - 1);
+            timelineTracks.getChildren().remove(lastChannel);
+        }
 
     public void addClipToTimeline(AudioClip clip, int channelNumber) {
         if (clip == null) {
@@ -100,22 +131,48 @@ public class TimelinePanel extends VBox {
 
         Button clipButton = new Button(clip.getFileName());
 
+        //Store the entire AudioClip object in the button's user data for later retrieval
+        clipButton.setUserData(clip);
+
+        clipButton.setOnAction(e -> {
+            HBox parentTrack = (HBox) clipButton.getParent();
+            parentTrack.getChildren().remove(clipButton);
+        });
+
         channels.get(channelNumber - 1)
                 .getChildren()
                 .add(clipButton);
     }
 
     public void clearTimeline() {
-        timelineTracks.getChildren().clear();
-        channels.clear();
-
-        addChannel();
-        addChannel();
-        addChannel();
-        addChannel();
+        for (HBox channel : channels) {
+            if (channel.getChildren().size() > 1) {
+                channel.getChildren().remove(1, channel.getChildren().size());
+            }
+        }
     }
 
     public int getChannelCount() {
         return channels.size();
     }
+
+    public ArrayList<HBox> getChannels() {
+        return channels;
+    }
+
+    public ArrayList<TimelineClip> getTimelineClips() {
+    ArrayList<TimelineClip> timelineClipList = new ArrayList<>();
+
+    for (int i = 0; i < channels.size(); i++) {
+        HBox channel = channels.get(i);
+
+        for (int j = 1; j < channel.getChildren().size(); j++) {
+            Button clipButton = (Button) channel.getChildren().get(j);
+
+            AudioClip audioClip = (AudioClip) clipButton.getUserData();
+            timelineClipList.add(new TimelineClip(i + 1, audioClip));
+        }
+    }
+    return timelineClipList;
+}
 }
