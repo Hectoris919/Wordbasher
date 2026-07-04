@@ -1,34 +1,21 @@
-// Handles audio playback operations.
-// Provides methods for playing, pausing, and stopping
-// audio clips and serves as the connection point
-// between the GUI and backend audio engine.
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import java.io.File;
+import java.util.List;
 
 public class PlaybackController {
 
-    private boolean isPlaying;
-    private boolean isPaused;
+    private MediaPlayer mediaPlayer;
+    private List<AudioClip> timelineClips;
+    private int currentTimelineIndex;
     private boolean loop;
-
-    public PlaybackController() {
-        this.isPlaying = false;
-        this.isPaused = false;
-        this.loop = false;
-    }
-
-    public boolean isPlaying() {
-        return isPlaying;
-    }
-
-    public boolean isPaused() {
-        return isPaused;
-    }
+    private boolean timelineMode;
 
     public boolean isLoop() {
         return loop;
     }
 
     public void playClip(AudioClip clip) {
-
         if (clip == null) {
             System.out.println("No clip selected.");
             return;
@@ -39,57 +26,113 @@ public class PlaybackController {
             return;
         }
 
-        isPlaying = true;
-        isPaused = false;
-
-        System.out.println("Playing: " + clip.getFileName());
+        timelineMode = false;
+        stopClip();
+        startMediaPlayer(clip, null);
     }
 
-    public void stopClip() {
-
-        if (!isPlaying && !isPaused) {
-            System.out.println("Nothing is playing.");
+    public void playTimeline(List<AudioClip> clips) {
+        if (clips == null || clips.isEmpty()) {
+            System.out.println("No timeline clips to play.");
             return;
         }
 
-        isPlaying = false;
-        isPaused = false;
+        stopClip();
+        timelineClips = clips;
+        currentTimelineIndex = 0;
+        timelineMode = true;
+        playCurrentTimelineClip();
+    }
 
-        System.out.println("Stopping playback.");
+    private void playCurrentTimelineClip() {
+        if (currentTimelineIndex >= timelineClips.size()) {
+            timelineMode = false;
+            System.out.println("Timeline playback finished.");
+            return;
+        }
+
+        AudioClip clip = timelineClips.get(currentTimelineIndex);
+
+        startMediaPlayer(clip, () -> {
+            currentTimelineIndex++;
+            playCurrentTimelineClip();
+        });
+    }
+
+    private void startMediaPlayer(AudioClip clip, Runnable onFinished) {
+        try {
+            disposeCurrentPlayer();
+
+            File file = new File(clip.getFilePath());
+            String uri = file.toURI().toString();
+
+            System.out.println("Trying to play: " + uri);
+
+            Media media = new Media(uri);
+
+            media.setOnError(() -> {
+                System.out.println("Media error: " + media.getError());
+            });
+
+            mediaPlayer = new MediaPlayer(media);
+
+            mediaPlayer.setOnError(() -> {
+                System.out.println("MediaPlayer error: " + mediaPlayer.getError());
+            });
+
+            mediaPlayer.setOnReady(() -> {
+                System.out.println("Media ready. Playing: " + clip.getFileName());
+
+                if (!timelineMode && loop) {
+                    mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                }
+
+                mediaPlayer.play();
+            });
+
+            if (onFinished != null) {
+                mediaPlayer.setOnEndOfMedia(onFinished);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Playback exception: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public void pauseClip() {
-
-        if (!isPlaying) {
-            System.out.println("Nothing to pause.");
-            return;
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
+            System.out.println("Pausing playback.");
         }
-
-        isPlaying = false;
-        isPaused = true;
-
-        System.out.println("Pausing playback.");
     }
 
     public void resumeClip() {
-
-        if (!isPaused) {
-            System.out.println("Nothing to resume.");
-            return;
+        if (mediaPlayer != null) {
+            mediaPlayer.play();
+            System.out.println("Resuming playback.");
         }
+    }
 
-        isPaused = false;
-        isPlaying = true;
+    public void stopClip() {
+        disposeCurrentPlayer();
 
-        System.out.println("Resuming playback.");
+        if (timelineMode) {
+            timelineMode = false;
+            currentTimelineIndex = 0;
+        }
+    }
+
+    private void disposeCurrentPlayer() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
     }
 
     public void setLoop(boolean loop) {
         this.loop = loop;
-
-        System.out.println(
-                "Loop mode: " +
-                (loop ? "enabled" : "disabled")
-        );
+        System.out.println("Loop mode: " + (loop ? "enabled" : "disabled"));
     }
 }
