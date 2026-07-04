@@ -9,10 +9,12 @@ public class ProjectFile {
 
     private String projectName;
     private List<AudioClip> clips;
+    private List<TimelineClip> timelineClips;
 
     public ProjectFile(String projectName) {
         this.projectName = projectName;
         this.clips = new ArrayList<>();
+        this.timelineClips = new ArrayList<>();
     }
 
     public String getProjectName() {
@@ -21,6 +23,10 @@ public class ProjectFile {
 
     public List<AudioClip> getClips() {
         return clips;
+    }
+
+    public List<TimelineClip> getTimelineClips() {
+        return timelineClips;
     }
 
     public void setProjectName(String projectName) {
@@ -41,9 +47,23 @@ public class ProjectFile {
         return clips.size();
     }
 
+    public void addTimelineClip(TimelineClip timelineClip) {
+        if (timelineClip != null) {
+            timelineClips.add(timelineClip);
+        }
+    }
+
+    public void clearTimelineClips() {
+        timelineClips.clear();
+    }
+
     public void saveToFile(String path) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+
             writer.write(projectName);
+            writer.newLine();
+
+            writer.write("CLIPS");
             writer.newLine();
 
             for (AudioClip clip : clips) {
@@ -53,6 +73,17 @@ public class ProjectFile {
                         clip.getCategory() + "|" +
                         clip.getTags() + "|" +
                         clip.getDuration()
+                );
+                writer.newLine();
+            }
+
+            writer.write("TIMELINE");
+            writer.newLine();
+
+            for (TimelineClip timelineClip : timelineClips) {
+                writer.write(
+                        timelineClip.getChannelNumber() + "|" +
+                        timelineClip.getFileName()
                 );
                 writer.newLine();
             }
@@ -78,25 +109,66 @@ public class ProjectFile {
 
             ProjectFile project = new ProjectFile(projectName);
 
+            String section = "";
             String line;
 
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split("\\|", 5);
 
-                if (parts.length == 5) {
-                    try {
-                        AudioClip clip = new AudioClip(
-                                parts[0],
-                                parts[1],
-                                parts[2],
-                                parts[3],
-                                Double.parseDouble(parts[4])
-                        );
+                if (line.equals("CLIPS") || line.equals("TIMELINE")) {
+                    section = line;
+                    continue;
+                }
 
-                        project.addClip(clip);
+                if (section.equals("CLIPS")) {
+                    String[] parts = line.split("\\|", 5);
 
-                    } catch (NumberFormatException e) {
-                        System.out.println("Skipping invalid clip duration: " + line);
+                    if (parts.length == 5) {
+                        try {
+                            AudioClip clip = new AudioClip(
+                                    parts[0],
+                                    parts[1],
+                                    parts[2],
+                                    parts[3],
+                                    Double.parseDouble(parts[4])
+                            );
+
+                            project.addClip(clip);
+
+                        } catch (NumberFormatException e) {
+                            System.out.println("Skipping invalid clip duration: " + line);
+                        }
+                    }
+                }
+
+                if (section.equals("TIMELINE")) {
+                    String[] parts = line.split("\\|", 2);
+
+                    if (parts.length == 2) {
+                        try {
+                            int channelNumber = Integer.parseInt(parts[0]);
+                            String fileName = parts[1];
+
+                            AudioClip matchingClip = null;
+
+                            for (AudioClip clip : project.getClips()) {
+                                if (clip.getFileName().equals(fileName)) {
+                                    matchingClip = clip;
+                                    break;
+                                }
+                            }
+
+                            if (matchingClip != null) {
+                                TimelineClip timelineClip = new TimelineClip(
+                                        channelNumber,
+                                        matchingClip
+                                );
+
+                                project.addTimelineClip(timelineClip);
+                            }
+
+                        } catch (NumberFormatException e) {
+                            System.out.println("Skipping invalid timeline clip: " + line);
+                        }
                     }
                 }
             }
